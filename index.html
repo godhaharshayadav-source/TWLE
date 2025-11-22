@@ -1,486 +1,457 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  User, 
-  Brain, 
-  Heart, 
-  Shield, 
-  Zap, 
-  MessageSquare, 
-  AlertTriangle, 
-  BarChart3,
-  Terminal,
-  Check,
-  RefreshCw,
-  ChevronRight,
-  Award 
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leadership DNA Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        .slide-up {
+            animation: fadeIn 0.7s ease-out forwards;
+        }
+        body {
+            background-color: #0a0a0c;
+            color: white;
+            font-family: 'Inter', sans-serif; /* You can link a font if you like */
+        }
+        .selection-blue::selection {
+            background-color: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body class="selection-blue min-h-screen overflow-x-hidden flex flex-col">
 
-// --- DATA: LEADERSHIP ARCHETYPES ---
-
-const ARCHETYPES = {
-  HEART: {
-    name: "The People's Champion",
-    leader: "Herb Kelleher (Southwest Airlines)",
-    style: "Affiliative / Democratic",
-    quote: "The business of business is people.",
-    desc: "You prioritize Trust and Culture above all. Like the final presentation on Southwest, you believe that if you take care of employees, they will take care of the business.",
-    color: "text-pink-400",
-    bg: "bg-pink-500/20",
-    border: "border-pink-500/50"
-  },
-  HEAD: {
-    name: "The Strategic Visionary",
-    leader: "Satya Nadella & Indra Nooyi",
-    style: "Visionary / Coaching",
-    quote: "Performance with Purpose.",
-    desc: "You lead with intellect and long-term strategy. You value competence and innovation, navigating change with a 'Learn-it-all' mindset.",
-    color: "text-blue-400",
-    bg: "bg-blue-500/20",
-    border: "border-blue-500/50"
-  },
-  GUTS: {
-    name: "The Crisis Commander",
-    leader: "Karambir Kang & Steve Jobs",
-    style: "Commanding / Pacesetting",
-    quote: "Stay hungry, stay foolish.",
-    desc: "You thrive in the storm. You take decisive action when others hesitate, prioritizing results and high standards over consensus.",
-    color: "text-red-400",
-    bg: "bg-red-500/20",
-    border: "border-red-500/50"
-  },
-  BALANCED: {
-    name: "The Holistic Leader",
-    leader: "Indra Nooyi (The 5 Cs)",
-    style: "Adaptive Leadership",
-    quote: "Leading with Head and Heart.",
-    desc: "You have mastered the balance between strategy (Head), empathy (Heart), and courage (Guts). You adapt your style to the situation.",
-    color: "text-purple-400",
-    bg: "bg-purple-500/20",
-    border: "border-purple-500/50"
-  }
-};
-
-// --- DATA: SCENARIOS (Based on Transcripts) ---
-
-const SCENARIOS = [
-  {
-    id: 1,
-    title: "The Silent Alarm",
-    context: "NASA / Columbia Analogy",
-    situation: "Your engineering lead reports a 'minor' anomaly in the new product launch scheduled for tomorrow. It's likely nothing, but checking it would delay the launch and cost millions.",
-    choices: [
-      { 
-        text: "Launch anyway. We can't delay progress for minor risks.", 
-        impact: { head: 10, heart: -10, guts: 20 },
-        feedback: "The launch succeeds, but your team feels unheard and anxious."
-      },
-      { 
-        text: "Delay the launch. Safety and transparency come first, regardless of cost.", 
-        impact: { head: 0, heart: 20, guts: -10 },
-        feedback: "Shareholders are angry, but your team trusts you implicitly."
-      },
-      { 
-        text: "Hold a quick emergency meeting. Let the team vote on the risk.", 
-        impact: { head: 10, heart: 10, guts: 0 },
-        feedback: "A balanced approach. You shared the burden of decision."
-      }
-    ]
-  },
-  {
-    id: 2,
-    title: "The Toxic Rockstar",
-    context: "The 'No Asshole Rule'",
-    situation: "Your top salesperson, Michael, is bringing in 40% of revenue but is bullying junior staff. Several complaints have hit your desk.",
-    choices: [
-      { 
-        text: "Fire him immediately. Culture is non-negotiable.", 
-        impact: { head: -10, heart: 20, guts: 20 },
-        feedback: "Revenue dips, but a massive wave of relief washes over the office."
-      },
-      { 
-        text: "Keep him. We need the numbers to survive this quarter.", 
-        impact: { head: 20, heart: -20, guts: 0 },
-        feedback: "You hit your targets, but two junior employees resign."
-      },
-      { 
-        text: "Coach him personally. Give him one month to change behavior.", 
-        impact: { head: 10, heart: 5, guts: 5 },
-        feedback: "A measured response. He stays on probation."
-      }
-    ]
-  },
-  {
-    id: 3,
-    title: "The Crisis",
-    context: "Taj Hotel Attack Analogy",
-    situation: "A fire has broken out in the server room. Critical data is at risk, but so is the safety of the IT team trapped inside.",
-    choices: [
-      { 
-        text: "Order immediate evacuation. Forget the data. People first.", 
-        impact: { head: -10, heart: 25, guts: 5 },
-        feedback: "Data is lost, but every single person is safe. Loyalty skyrockets."
-      },
-      { 
-        text: "Lead a volunteer team inside to save the data and the people.", 
-        impact: { head: 0, heart: 10, guts: 25 },
-        feedback: "Heroic and risky. You saved both, but risked everything."
-      },
-      { 
-        text: "Follow standard protocol. Wait for fire department.", 
-        impact: { head: 15, heart: -5, guts: -10 },
-        feedback: "Safe and bureaucratic. The team felt abandoned in the moment."
-      }
-    ]
-  },
-  {
-    id: 4,
-    title: "The Culture Refresh",
-    context: "Microsoft / Satya Nadella",
-    situation: "Your company is viewed as arrogant and outdated. You need a new slogan to drive the next 5 years.",
-    choices: [
-      { 
-        text: "'Crush the Competition.' Focus on winning at all costs.", 
-        impact: { head: 5, heart: -15, guts: 20 },
-        feedback: "Aggressive. It rallies the sales team but alienates partners."
-      },
-      { 
-        text: "'Empower Everyone.' Focus on empathy and growth mindset.", 
-        impact: { head: 20, heart: 15, guts: 0 },
-        feedback: "Inspiring. Innovation blooms, though some find it 'soft'."
-      },
-      { 
-        text: "'Radical Freedom.' Let employees set their own salaries and hours.", 
-        impact: { head: -10, heart: 20, guts: 10 },
-        feedback: "Chaos ensues initially, but creativity eventually explodes."
-      }
-    ]
-  },
-  {
-    id: 5,
-    title: "The Missing Feedback",
-    context: "The 'Washroom Break' / Amazon",
-    situation: "You discover your automated systems are penalizing warehouse workers for taking bathroom breaks.",
-    choices: [
-      { 
-        text: "Scrap the system immediately. It's inhumane.", 
-        impact: { head: -5, heart: 25, guts: 10 },
-        feedback: "Productivity metrics drop, but you sleep better at night."
-      },
-      { 
-        text: "Keep it. Efficiency is the only way we compete on price.", 
-        impact: { head: 20, heart: -25, guts: 5 },
-        feedback: "Efficiency is high. Turnover is higher. Morale is low."
-      },
-      { 
-        text: "Tweaked it. Keep monitoring but add 'human allowance' buffers.", 
-        impact: { head: 15, heart: 5, guts: 0 },
-        feedback: "A pragmatic compromise."
-      }
-    ]
-  }
-];
-
-// --- COMPONENTS ---
-
-const MetricBar = ({ icon: Icon, label, value, color }) => (
-  <div className="flex items-center gap-3 w-full">
-    <div className={`p-2 rounded-lg ${color.bg} ${color.text}`}>
-      <Icon size={18} />
+    <!-- Background Elements -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/20 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-900/20 rounded-full blur-[120px]"></div>
     </div>
-    <div className="flex-grow">
-      <div className="flex justify-between text-xs uppercase font-bold text-gray-400 mb-1">
-        <span>{label}</span>
-        <span>{value}%</span>
-      </div>
-      <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
-        <div 
-          className={`h-full transition-all duration-500 ease-out ${color.fill}`} 
-          style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-        />
-      </div>
-    </div>
-  </div>
-);
 
-const TerminalText = ({ text, speed = 10 }) => {
-  const [displayed, setDisplayed] = useState('');
-  
-  useEffect(() => {
-    setDisplayed('');
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i < text.length) {
-        setDisplayed((prev) => prev + text.charAt(i));
-        i++;
-      } else {
-        clearInterval(timer);
-      }
-    }, speed);
-    return () => clearInterval(timer);
-  }, [text, speed]);
-
-  return <p className="text-gray-300 font-mono leading-relaxed">{displayed}</p>;
-};
-
-export default function LeadershipCrucible() {
-  const [gameState, setGameState] = useState('start'); // start, playing, feedback, end
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [stats, setStats] = useState({ head: 50, heart: 50, guts: 50 });
-  const [lastFeedback, setLastFeedback] = useState('');
-  const [history, setHistory] = useState([]);
-
-  const currentScenario = SCENARIOS[currentIndex];
-
-  const handleChoice = (choice) => {
-    const newStats = {
-      head: Math.min(100, Math.max(0, stats.head + choice.impact.head)),
-      heart: Math.min(100, Math.max(0, stats.heart + choice.impact.heart)),
-      guts: Math.min(100, Math.max(0, stats.guts + choice.impact.guts))
-    };
-    
-    setStats(newStats);
-    setLastFeedback(choice.feedback);
-    setHistory([...history, { id: currentScenario.id, choice: choice.text }]);
-    setGameState('feedback');
-  };
-
-  const nextLevel = () => {
-    if (currentIndex < SCENARIOS.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      setGameState('playing');
-    } else {
-      setGameState('end');
-    }
-  };
-
-  const getResult = () => {
-    const { head, heart, guts } = stats;
-    if (Math.abs(head - heart) < 15 && Math.abs(heart - guts) < 15) return ARCHETYPES.BALANCED;
-    if (heart >= head && heart >= guts) return ARCHETYPES.HEART;
-    if (head >= heart && head >= guts) return ARCHETYPES.HEAD;
-    return ARCHETYPES.GUTS;
-  };
-
-  // --- VIEWS ---
-
-  const StartScreen = () => (
-    <div className="text-center space-y-8 animate-fadeIn max-w-2xl mx-auto mt-12">
-      <div className="relative inline-block">
-        <div className="absolute inset-0 bg-blue-500 blur-[60px] opacity-20"></div>
-        <Shield size={80} className="text-blue-400 relative z-10 mx-auto" />
-      </div>
-      <div>
-        <h1 className="text-5xl font-black text-white mb-4 tracking-tight">
-          THE LEADERSHIP <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">CRUCIBLE</span>
-        </h1>
-        <p className="text-xl text-gray-400">
-          You are about to step into the CEO's chair. <br/>
-          5 Crises. 3 Metrics. No easy answers.
-        </p>
-      </div>
-      
-      <div className="grid grid-cols-3 gap-4 text-left bg-gray-800/50 p-6 rounded-xl border border-gray-700">
-        <div className="space-y-2">
-          <div className="flex items-center text-blue-400 font-bold"><Brain size={16} className="mr-2"/> VISION</div>
-          <p className="text-xs text-gray-500">Strategic thinking, competence, and future-focus.</p>
+    <!-- Header -->
+    <header class="relative z-10 max-w-7xl mx-auto w-full flex justify-between items-center p-6 border-b border-gray-800">
+        <div class="flex items-center space-x-2">
+            <i data-lucide="bar-chart-3" class="text-blue-500"></i>
+            <span class="font-bold text-lg tracking-wide">LEADERSHIP<span class="text-blue-500">LAB</span> // SIMULATION</span>
         </div>
-        <div className="space-y-2">
-          <div className="flex items-center text-pink-400 font-bold"><Heart size={16} className="mr-2"/> TRUST</div>
-          <p className="text-xs text-gray-500">Empathy, psychological safety, and people-first.</p>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center text-red-400 font-bold"><Zap size={16} className="mr-2"/> CONTROL</div>
-          <p className="text-xs text-gray-500">Decisiveness, high standards, and crisis management.</p>
-        </div>
-      </div>
+        <div class="text-xs font-mono text-gray-500">v2.0.4 (HTML)</div>
+    </header>
 
-      <button 
-        onClick={() => setGameState('playing')}
-        className="px-10 py-4 bg-white text-black font-bold text-lg rounded-full hover:bg-blue-50 transition-all hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-      >
-        Enter Simulation
-      </button>
-    </div>
-  );
+    <!-- Main Content Area -->
+    <main id="app-root" class="relative z-10 flex-grow flex flex-col items-center justify-center p-4 md:p-8 w-full max-w-7xl mx-auto">
+        <!-- Views will be injected here by JavaScript -->
+    </main>
 
-  const SimulationScreen = () => (
-    <div className="max-w-4xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
-      {/* Sidebar Stats */}
-      <div className="lg:col-span-1 space-y-6">
-        <div className="bg-gray-900/80 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-2xl">
-          <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-6 border-b border-gray-800 pb-2">Live Telemetry</h3>
-          <div className="space-y-6">
-            <MetricBar icon={Brain} label="Vision (Head)" value={stats.head} color={{bg: 'bg-blue-900', text: 'text-blue-400', fill: 'bg-blue-500'}} />
-            <MetricBar icon={Heart} label="Trust (Heart)" value={stats.heart} color={{bg: 'bg-pink-900', text: 'text-pink-400', fill: 'bg-pink-500'}} />
-            <MetricBar icon={Zap} label="Control (Guts)" value={stats.guts} color={{bg: 'bg-red-900', text: 'text-red-400', fill: 'bg-red-500'}} />
-          </div>
-        </div>
-        
-        <div className="bg-gray-900/50 border border-gray-800 p-4 rounded-xl">
-          <div className="flex items-center gap-2 text-gray-500 text-sm mb-2">
-            <Terminal size={14} />
-            <span>System Log</span>
-          </div>
-          <div className="h-32 overflow-y-auto text-xs font-mono text-gray-600 space-y-2">
-            {history.map((h, i) => (
-              <div key={i} className="border-l-2 border-gray-700 pl-2">
-                <span className="text-gray-400">DECISION {i+1}:</span> {h.choice.substring(0, 30)}...
-              </div>
-            ))}
-            <div className="text-blue-500 animate-pulse">_ Awaiting input...</div>
-          </div>
-        </div>
-      </div>
+    <!-- JavaScript Logic -->
+    <script>
+        // --- DATA ---
+        const ARCHETYPES = {
+            HEART: {
+                name: "The People's Champion",
+                leader: "Herb Kelleher (Southwest Airlines)",
+                style: "Affiliative / Democratic",
+                quote: "The business of business is people.",
+                desc: "You prioritize Trust and Culture above all. Like the final presentation on Southwest, you believe that if you take care of employees, they will take care of the business.",
+                color: "text-pink-400",
+                bg: "bg-pink-500/20",
+                border: "border-pink-500/50"
+            },
+            HEAD: {
+                name: "The Strategic Visionary",
+                leader: "Satya Nadella & Indra Nooyi",
+                style: "Visionary / Coaching",
+                quote: "Performance with Purpose.",
+                desc: "You lead with intellect and long-term strategy. You value competence and innovation, navigating change with a 'Learn-it-all' mindset.",
+                color: "text-blue-400",
+                bg: "bg-blue-500/20",
+                border: "border-blue-500/50"
+            },
+            GUTS: {
+                name: "The Crisis Commander",
+                leader: "Karambir Kang & Steve Jobs",
+                style: "Commanding / Pacesetting",
+                quote: "Stay hungry, stay foolish.",
+                desc: "You thrive in the storm. You take decisive action when others hesitate, prioritizing results and high standards over consensus.",
+                color: "text-red-400",
+                bg: "bg-red-500/20",
+                border: "border-red-500/50"
+            },
+            BALANCED: {
+                name: "The Holistic Leader",
+                leader: "Indra Nooyi (The 5 Cs)",
+                style: "Adaptive Leadership",
+                quote: "Leading with Head and Heart.",
+                desc: "You have mastered the balance between strategy (Head), empathy (Heart), and courage (Guts). You adapt your style to the situation.",
+                color: "text-purple-400",
+                bg: "bg-purple-500/20",
+                border: "border-purple-500/50"
+            }
+        };
 
-      {/* Main Scenario Area */}
-      <div className="lg:col-span-2 space-y-6">
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-1 shadow-xl overflow-hidden">
-          <div className="bg-gray-900 p-2 px-4 border-b border-gray-700 flex justify-between items-center">
-            <span className="text-xs font-mono text-gray-400 uppercase flex items-center">
-              <AlertTriangle size={12} className="mr-2 text-yellow-500" /> 
-              PRIORITY: CRITICAL
-            </span>
-            <span className="text-xs font-mono text-gray-600">SCENARIO {currentIndex + 1} / {SCENARIOS.length}</span>
-          </div>
-          
-          <div className="p-6 md:p-8 min-h-[300px] flex flex-col">
-            <h2 className="text-2xl font-bold text-white mb-2">{currentScenario.title}</h2>
-            <p className="text-sm text-blue-400 font-mono mb-6 flex items-center">
-              <MessageSquare size={14} className="mr-2" />
-              Subject: {currentScenario.context}
-            </p>
+        const SCENARIOS = [
+            {
+                id: 1,
+                title: "The Silent Alarm",
+                context: "NASA / Columbia Analogy",
+                situation: "Your engineering lead reports a 'minor' anomaly in the new product launch scheduled for tomorrow. It's likely nothing, but checking it would delay the launch and cost millions.",
+                choices: [
+                    { text: "Launch anyway. We can't delay progress for minor risks.", impact: { head: 10, heart: -10, guts: 20 }, feedback: "The launch succeeds, but your team feels unheard and anxious." },
+                    { text: "Delay the launch. Safety and transparency come first, regardless of cost.", impact: { head: 0, heart: 20, guts: -10 }, feedback: "Shareholders are angry, but your team trusts you implicitly." },
+                    { text: "Hold a quick emergency meeting. Let the team vote on the risk.", impact: { head: 10, heart: 10, guts: 0 }, feedback: "A balanced approach. You shared the burden of decision." }
+                ]
+            },
+            {
+                id: 2,
+                title: "The Toxic Rockstar",
+                context: "The 'No Asshole Rule'",
+                situation: "Your top salesperson, Michael, is bringing in 40% of revenue but is bullying junior staff. Several complaints have hit your desk.",
+                choices: [
+                    { text: "Fire him immediately. Culture is non-negotiable.", impact: { head: -10, heart: 20, guts: 20 }, feedback: "Revenue dips, but a massive wave of relief washes over the office." },
+                    { text: "Keep him. We need the numbers to survive this quarter.", impact: { head: 20, heart: -20, guts: 0 }, feedback: "You hit your targets, but two junior employees resign." },
+                    { text: "Coach him personally. Give him one month to change behavior.", impact: { head: 10, heart: 5, guts: 5 }, feedback: "A measured response. He stays on probation." }
+                ]
+            },
+            {
+                id: 3,
+                title: "The Crisis",
+                context: "Taj Hotel Attack Analogy",
+                situation: "A fire has broken out in the server room. Critical data is at risk, but so is the safety of the IT team trapped inside.",
+                choices: [
+                    { text: "Order immediate evacuation. Forget the data. People first.", impact: { head: -10, heart: 25, guts: 5 }, feedback: "Data is lost, but every single person is safe. Loyalty skyrockets." },
+                    { text: "Lead a volunteer team inside to save the data and the people.", impact: { head: 0, heart: 10, guts: 25 }, feedback: "Heroic and risky. You saved both, but risked everything." },
+                    { text: "Follow standard protocol. Wait for fire department.", impact: { head: 15, heart: -5, guts: -10 }, feedback: "Safe and bureaucratic. The team felt abandoned in the moment." }
+                ]
+            },
+            {
+                id: 4,
+                title: "The Culture Refresh",
+                context: "Microsoft / Satya Nadella",
+                situation: "Your company is viewed as arrogant and outdated. You need a new slogan to drive the next 5 years.",
+                choices: [
+                    { text: "'Crush the Competition.' Focus on winning at all costs.", impact: { head: 5, heart: -15, guts: 20 }, feedback: "Aggressive. It rallies the sales team but alienates partners." },
+                    { text: "'Empower Everyone.' Focus on empathy and growth mindset.", impact: { head: 20, heart: 15, guts: 0 }, feedback: "Inspiring. Innovation blooms, though some find it 'soft'." },
+                    { text: "'Radical Freedom.' Let employees set their own salaries and hours.", impact: { head: -10, heart: 20, guts: 10 }, feedback: "Chaos ensues initially, but creativity eventually explodes." }
+                ]
+            },
+            {
+                id: 5,
+                title: "The Missing Feedback",
+                context: "The 'Washroom Break' / Amazon",
+                situation: "You discover your automated systems are penalizing warehouse workers for taking bathroom breaks.",
+                choices: [
+                    { text: "Scrap the system immediately. It's inhumane.", impact: { head: -5, heart: 25, guts: 10 }, feedback: "Productivity metrics drop, but you sleep better at night." },
+                    { text: "Keep it. Efficiency is the only way we compete on price.", impact: { head: 20, heart: -25, guts: 5 }, feedback: "Efficiency is high. Turnover is higher. Morale is low." },
+                    { text: "Tweaked it. Keep monitoring but add 'human allowance' buffers.", impact: { head: 15, heart: 5, guts: 0 }, feedback: "A pragmatic compromise." }
+                ]
+            }
+        ];
+
+        // --- STATE ---
+        let state = {
+            view: 'start', // start, playing, feedback, end
+            currentIndex: 0,
+            stats: { head: 50, heart: 50, guts: 50 },
+            lastFeedback: '',
+            history: []
+        };
+
+        // --- RENDER FUNCTIONS ---
+
+        const root = document.getElementById('app-root');
+
+        function render() {
+            root.innerHTML = ''; // Clear current content
             
-            <div className="mb-8 p-4 bg-black/30 border-l-4 border-blue-500 rounded-r-lg">
-              <TerminalText text={currentScenario.situation} />
-            </div>
+            if (state.view === 'start') {
+                renderStartScreen();
+            } else if (state.view === 'playing') {
+                renderSimulationScreen();
+            } else if (state.view === 'feedback') {
+                renderSimulationScreen(); // Render background
+                renderFeedbackOverlay();  // Overlay
+            } else if (state.view === 'end') {
+                renderEndScreen();
+            }
+            
+            // Re-initialize icons
+            lucide.createIcons();
+        }
 
-            <div className="mt-auto space-y-3">
-              {currentScenario.choices.map((choice, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleChoice(choice)}
-                  className="w-full text-left p-4 rounded-lg bg-gray-700/50 hover:bg-gray-600 border border-transparent hover:border-blue-500 transition-all duration-200 group flex items-center"
-                >
-                  <div className="w-6 h-6 rounded bg-gray-800 flex items-center justify-center text-xs font-mono text-gray-400 group-hover:text-white group-hover:bg-blue-600 mr-4 transition-colors">
-                    {idx + 1}
-                  </div>
-                  <span className="text-gray-200 group-hover:text-white text-sm md:text-base">{choice.text}</span>
+        function renderStartScreen() {
+            const div = document.createElement('div');
+            div.className = "text-center space-y-8 animate-fadeIn max-w-2xl mx-auto mt-12";
+            div.innerHTML = `
+                <div class="relative inline-block">
+                    <div class="absolute inset-0 bg-blue-500 blur-[60px] opacity-20"></div>
+                    <i data-lucide="shield" class="text-blue-400 w-20 h-20 relative z-10 mx-auto"></i>
+                </div>
+                <div>
+                    <h1 class="text-5xl font-black text-white mb-4 tracking-tight">
+                        THE LEADERSHIP <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">CRUCIBLE</span>
+                    </h1>
+                    <p class="text-xl text-gray-400">
+                        You are about to step into the CEO's chair. <br/>
+                        5 Crises. 3 Metrics. No easy answers.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-left bg-gray-800/50 p-6 rounded-xl border border-gray-700">
+                    <div class="space-y-2">
+                        <div class="flex items-center text-blue-400 font-bold"><i data-lucide="brain" class="mr-2 w-4 h-4"></i> VISION</div>
+                        <p class="text-xs text-gray-500">Strategic thinking, competence, and future-focus.</p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center text-pink-400 font-bold"><i data-lucide="heart" class="mr-2 w-4 h-4"></i> TRUST</div>
+                        <p class="text-xs text-gray-500">Empathy, psychological safety, and people-first.</p>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center text-red-400 font-bold"><i data-lucide="zap" class="mr-2 w-4 h-4"></i> CONTROL</div>
+                        <p class="text-xs text-gray-500">Decisiveness, high standards, and crisis management.</p>
+                    </div>
+                </div>
+                <button id="start-btn" class="px-10 py-4 bg-white text-black font-bold text-lg rounded-full hover:bg-blue-50 transition-all hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                    Enter Simulation
                 </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const FeedbackOverlay = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
-      <div className="bg-gray-900 border border-gray-700 p-8 rounded-2xl max-w-lg w-full shadow-2xl text-center space-y-6">
-        <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Check size={32} />
-        </div>
-        <h3 className="text-2xl font-bold text-white">Decision Logged</h3>
-        <p className="text-lg text-gray-300">"{lastFeedback}"</p>
-        
-        <div className="flex justify-center gap-4 pt-4">
-          <div className="text-xs font-mono text-gray-500">
-            STATS UPDATED
-          </div>
-        </div>
-
-        <button 
-          onClick={nextLevel}
-          className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition flex items-center justify-center"
-        >
-          {currentIndex < SCENARIOS.length - 1 ? "Next Situation" : "View Final Analysis"}
-          <ChevronRight size={20} className="ml-2" />
-        </button>
-      </div>
-    </div>
-  );
-
-  const EndScreen = () => {
-    const outcome = getResult();
-    
-    return (
-      <div className="max-w-4xl mx-auto mt-12 animate-slideUp">
-        <div className={`relative overflow-hidden rounded-2xl border ${outcome.border} bg-gray-900 shadow-2xl`}>
-          {/* Header Background */}
-          <div className={`absolute top-0 left-0 right-0 h-32 ${outcome.bg}`}></div>
-          
-          <div className="relative p-8 md:p-12 text-center">
-            <div className={`w-32 h-32 rounded-full bg-gray-900 border-4 ${outcome.border} flex items-center justify-center mx-auto mb-6 shadow-xl`}>
-              <Award size={64} className={outcome.color} />
-            </div>
+            `;
+            root.appendChild(div);
             
-            <h2 className="text-gray-400 uppercase tracking-widest text-sm font-bold mb-2">Your Leadership Archetype</h2>
-            <h1 className={`text-4xl md:text-5xl font-black text-white mb-4`}>{outcome.name}</h1>
+            document.getElementById('start-btn').addEventListener('click', () => {
+                state.view = 'playing';
+                render();
+            });
+        }
+
+        function renderSimulationScreen() {
+            const scenario = SCENARIOS[state.currentIndex];
             
-            <div className="flex flex-wrap justify-center gap-2 mb-8">
-              <span className={`px-3 py-1 rounded-full text-xs font-bold bg-gray-800 border border-gray-700 text-gray-300`}>
-                {outcome.style}
-              </span>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold bg-gray-800 border border-gray-700 text-gray-300`}>
-                Matches: {outcome.leader}
-              </span>
-            </div>
+            const container = document.createElement('div');
+            container.className = "max-w-4xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8 animate-fadeIn";
+            
+            // Sidebar HTML
+            const sidebar = `
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-gray-900/80 backdrop-blur border border-gray-700 p-6 rounded-xl shadow-2xl">
+                        <h3 class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-6 border-b border-gray-800 pb-2">Live Telemetry</h3>
+                        <div class="space-y-6">
+                            ${renderMetricBar('brain', 'Vision (Head)', state.stats.head, 'bg-blue-900', 'text-blue-400', 'bg-blue-500')}
+                            ${renderMetricBar('heart', 'Trust (Heart)', state.stats.heart, 'bg-pink-900', 'text-pink-400', 'bg-pink-500')}
+                            ${renderMetricBar('zap', 'Control (Guts)', state.stats.guts, 'bg-red-900', 'text-red-400', 'bg-red-500')}
+                        </div>
+                    </div>
+                    <div class="bg-gray-900/50 border border-gray-800 p-4 rounded-xl">
+                        <div class="flex items-center gap-2 text-gray-500 text-sm mb-2">
+                            <i data-lucide="terminal" class="w-4 h-4"></i>
+                            <span>System Log</span>
+                        </div>
+                        <div class="h-32 overflow-y-auto text-xs font-mono text-gray-600 space-y-2" id="system-log">
+                            <!-- Logs injected here -->
+                        </div>
+                    </div>
+                </div>
+            `;
 
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed mb-8">
-              {outcome.desc}
-            </p>
+            // Main Scenario Area
+            const mainArea = `
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-gray-800 border border-gray-700 rounded-xl p-1 shadow-xl overflow-hidden">
+                        <div class="bg-gray-900 p-2 px-4 border-b border-gray-700 flex justify-between items-center">
+                            <span class="text-xs font-mono text-gray-400 uppercase flex items-center">
+                                <i data-lucide="alert-triangle" class="mr-2 w-3 h-3 text-yellow-500"></i> 
+                                PRIORITY: CRITICAL
+                            </span>
+                            <span class="text-xs font-mono text-gray-600">SCENARIO ${state.currentIndex + 1} / ${SCENARIOS.length}</span>
+                        </div>
+                        <div class="p-6 md:p-8 min-h-[300px] flex flex-col">
+                            <h2 class="text-2xl font-bold text-white mb-2">${scenario.title}</h2>
+                            <p class="text-sm text-blue-400 font-mono mb-6 flex items-center">
+                                <i data-lucide="message-square" class="mr-2 w-4 h-4"></i>
+                                Subject: ${scenario.context}
+                            </p>
+                            <div class="mb-8 p-4 bg-black/30 border-l-4 border-blue-500 rounded-r-lg">
+                                <p class="text-gray-300 font-mono leading-relaxed typing-effect">${scenario.situation}</p>
+                            </div>
+                            <div class="mt-auto space-y-3" id="choices-container">
+                                <!-- Choices injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
 
-            <blockquote className={`text-lg italic font-serif ${outcome.color} mb-12`}>
-              "{outcome.quote}"
-            </blockquote>
+            container.innerHTML = sidebar + mainArea;
+            root.appendChild(container);
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-black/20 p-6 rounded-xl">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-400">{stats.head}%</div>
-                <div className="text-xs text-gray-500 uppercase font-bold">Vision</div>
-              </div>
-              <div className="text-center border-l border-r border-gray-700">
-                <div className="text-2xl font-bold text-pink-400">{stats.heart}%</div>
-                <div className="text-xs text-gray-500 uppercase font-bold">Trust</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-400">{stats.guts}%</div>
-                <div className="text-xs text-gray-500 uppercase font-bold">Control</div>
-              </div>
-            </div>
+            // Render Logs
+            const logContainer = document.getElementById('system-log');
+            state.history.forEach((h, i) => {
+                logContainer.innerHTML += `
+                    <div class="border-l-2 border-gray-700 pl-2">
+                        <span class="text-gray-400">DECISION ${i+1}:</span> ${h.choice.substring(0, 30)}...
+                    </div>
+                `;
+            });
+            logContainer.innerHTML += `<div class="text-blue-500 animate-pulse">_ Awaiting input...</div>`;
 
-            <button 
-              onClick={() => {
-                setGameState('start');
-                setStats({ head: 50, heart: 50, guts: 50 });
-                setCurrentIndex(0);
-                setHistory([]);
-              }}
-              className="mt-12 flex items-center justify-center mx-auto text-gray-400 hover:text-white transition"
-            >
-              <RefreshCw size={16} className="mr-2" /> Reset Simulation
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+            // Render Choices
+            const choicesContainer = document.getElementById('choices-container');
+            scenario.choices.forEach((choice, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-lg bg-gray-700/50 hover:bg-gray-600 border border-transparent hover:border-blue-500 transition-all duration-200 group flex items-center";
+                btn.innerHTML = `
+                    <div class="w-6 h-6 rounded bg-gray-800 flex items-center justify-center text-xs font-mono text-gray-400 group-hover:text-white group-hover:bg-blue-600 mr-4 transition-colors">
+                        ${idx + 1}
+                    </div>
+                    <span class="text-gray-200 group-hover:text-white text-sm md:text-base">${choice.text}</span>
+                `;
+                btn.onclick = () => handleChoice(choice);
+                choicesContainer.appendChild(btn);
+            });
+        }
 
-  return (
-    <div className="min-h-screen bg-[#0a0a0c] text-white font-sans selection:bg-blue-500 selection:text-white p-4 md:p-8">
-      {/* Header */}
-      <header className="max-w-7xl mx-auto flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
-        <div className="flex items-center space-x-2">
-          <BarChart3 className="text-blue-500" />
-          <span className="font-bold text-lg tracking-wide">LEADERSHIP<span className="text-blue-500">LAB</span> // SIMULATION</span>
-        </div>
-        <div className="text-xs font-mono text-gray-500">v2.0.4</div>
-      </header>
+        function renderMetricBar(iconName, label, value, bgClass, textClass, fillClass) {
+            const width = Math.min(100, Math.max(0, value));
+            return `
+                <div class="flex items-center gap-3 w-full">
+                    <div class="p-2 rounded-lg ${bgClass} ${textClass}">
+                        <i data-lucide="${iconName}" class="w-5 h-5"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <div class="flex justify-between text-xs uppercase font-bold text-gray-400 mb-1">
+                            <span>${label}</span>
+                            <span>${Math.round(value)}%</span>
+                        </div>
+                        <div class="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
+                            <div class="h-full transition-all duration-500 ease-out ${fillClass}" style="width: ${width}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
-      {gameState === 'start' && <StartScreen />}
-      {(gameState === 'playing' || gameState === 'feedback') && <SimulationScreen />}
-      {gameState === 'feedback' && <FeedbackOverlay />}
-      {gameState === 'end' && <EndScreen />}
-    </div>
-  );
-}
+        function renderFeedbackOverlay() {
+            const overlay = document.createElement('div');
+            overlay.className = "fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn";
+            overlay.innerHTML = `
+                <div class="bg-gray-900 border border-gray-700 p-8 rounded-2xl max-w-lg w-full shadow-2xl text-center space-y-6">
+                    <div class="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="check" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white">Decision Logged</h3>
+                    <p class="text-lg text-gray-300">"${state.lastFeedback}"</p>
+                    <div class="flex justify-center gap-4 pt-4">
+                        <div class="text-xs font-mono text-gray-500">STATS UPDATED</div>
+                    </div>
+                    <button id="next-btn" class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition flex items-center justify-center">
+                        ${state.currentIndex < SCENARIOS.length - 1 ? "Next Situation" : "View Final Analysis"}
+                        <i data-lucide="chevron-right" class="ml-2 w-5 h-5"></i>
+                    </button>
+                </div>
+            `;
+            root.appendChild(overlay);
+            
+            document.getElementById('next-btn').onclick = () => {
+                if (state.currentIndex < SCENARIOS.length - 1) {
+                    state.currentIndex++;
+                    state.view = 'playing';
+                } else {
+                    state.view = 'end';
+                }
+                render();
+            };
+        }
+
+        function renderEndScreen() {
+            const outcome = getResult();
+            
+            const div = document.createElement('div');
+            div.className = "max-w-4xl mx-auto mt-12 animate-slideUp w-full";
+            div.innerHTML = `
+                <div class="relative overflow-hidden rounded-2xl border ${outcome.border} bg-gray-900 shadow-2xl">
+                    <div class="absolute top-0 left-0 right-0 h-32 ${outcome.bg}"></div>
+                    <div class="relative p-8 md:p-12 text-center">
+                        <div class="w-32 h-32 rounded-full bg-gray-900 border-4 ${outcome.border} flex items-center justify-center mx-auto mb-6 shadow-xl">
+                            <i data-lucide="award" class="w-16 h-16 ${outcome.color}"></i>
+                        </div>
+                        <h2 class="text-gray-400 uppercase tracking-widest text-sm font-bold mb-2">Your Leadership Archetype</h2>
+                        <h1 class="text-4xl md:text-5xl font-black text-white mb-4">${outcome.name}</h1>
+                        <div class="flex flex-wrap justify-center gap-2 mb-8">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-gray-800 border border-gray-700 text-gray-300">${outcome.style}</span>
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-gray-800 border border-gray-700 text-gray-300">Matches: ${outcome.leader}</span>
+                        </div>
+                        <p class="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed mb-8">${outcome.desc}</p>
+                        <blockquote class="text-lg italic font-serif ${outcome.color} mb-12">"${outcome.quote}"</blockquote>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-black/20 p-6 rounded-xl mb-8">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-400">${state.stats.head}%</div>
+                                <div class="text-xs text-gray-500 uppercase font-bold">Vision</div>
+                            </div>
+                            <div class="text-center border-l border-r border-gray-700">
+                                <div class="text-2xl font-bold text-pink-400">${state.stats.heart}%</div>
+                                <div class="text-xs text-gray-500 uppercase font-bold">Trust</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-red-400">${state.stats.guts}%</div>
+                                <div class="text-xs text-gray-500 uppercase font-bold">Control</div>
+                            </div>
+                        </div>
+
+                        <button id="reset-btn" class="flex items-center justify-center mx-auto text-gray-400 hover:text-white transition">
+                            <i data-lucide="refresh-cw" class="mr-2 w-4 h-4"></i> Reset Simulation
+                        </button>
+                    </div>
+                </div>
+            `;
+            root.appendChild(div);
+
+            document.getElementById('reset-btn').onclick = () => {
+                state = {
+                    view: 'start',
+                    currentIndex: 0,
+                    stats: { head: 50, heart: 50, guts: 50 },
+                    lastFeedback: '',
+                    history: []
+                };
+                render();
+            };
+        }
+
+        // --- LOGIC HELPERS ---
+
+        function handleChoice(choice) {
+            const newStats = {
+                head: Math.min(100, Math.max(0, state.stats.head + choice.impact.head)),
+                heart: Math.min(100, Math.max(0, state.stats.heart + choice.impact.heart)),
+                guts: Math.min(100, Math.max(0, state.stats.guts + choice.impact.guts))
+            };
+            state.stats = newStats;
+            state.lastFeedback = choice.feedback;
+            state.history.push({ id: SCENARIOS[state.currentIndex].id, choice: choice.text });
+            state.view = 'feedback';
+            render();
+        }
+
+        function getResult() {
+            const { head, heart, guts } = state.stats;
+            if (Math.abs(head - heart) < 15 && Math.abs(heart - guts) < 15) return ARCHETYPES.BALANCED;
+            if (heart >= head && heart >= guts) return ARCHETYPES.HEART;
+            if (head >= heart && head >= guts) return ARCHETYPES.HEAD;
+            return ARCHETYPES.GUTS;
+        }
+
+        // --- INITIALIZATION ---
+        render();
+
+    </script>
+</body>
+</html>
